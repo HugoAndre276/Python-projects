@@ -3,7 +3,7 @@
 # cadeau_manon.py
 A data analyser I use to get data from Discord (using CSV) and Messenger (using JSON) from conversations I've had with my girlfriend. Returns a .xlsx file. Names are hard-coded but can easily be changed while changing the data files.
 
-# Fourier
+# fourier.py
 A frequency analyser taking an Audacity screenshot and time boundaries as input and displaying a frequency spectrum with matplotlib and Fourier analysis.
 
 # Simulation gravité
