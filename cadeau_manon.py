@@ -8,9 +8,16 @@ import datetime
 import time
 from openpyxl import Workbook
 
+
+workbook=Workbook()
+
 #Définitions de classes
 class Personne:
     def __init__(self):
+
+        #Nom
+        self.name=""
+
         #Liste des messages
         self.messages=[]
 
@@ -41,6 +48,10 @@ class Personne:
 
         #Nombre de liens
         self.lien=0
+
+        #Page de excel
+        self.sheet=workbook.create_sheet()
+
 
 #Définitions de fonctions
 
@@ -132,34 +143,38 @@ days=["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"]
 Hugo = Personne()
 Manon = Personne()
 
+Hugo.name="Hugo"
+Manon.name="Manon"
+
 personnes=[Hugo,Manon]
 
 #lire le json de Messenger
-with open('message_rs.json') as file:
-    data = json.load(file)
-    for p in data['messages']:
-        if 'content' in p and p['type']=='Generic':
-            if p['sender_name']=="Manon Dsc":
-                Manon.messages.append(ftfy.fix_text(p['content']))
-                Manon.time.append(p['timestamp_ms'])
-            else:
-                Hugo.messages.append(ftfy.fix_text(p['content']))
-                Hugo.time.append(p['timestamp_ms'])
-        if 'photos' in p:
-            if p['sender_name']=='Manon Dsc':
-                Manon.pic+=1
-            else:
-                Hugo.pic+=1
-        if p['type']=='Share':
-            if p['sender_name']=='Manon Dsc':
-                Manon.lien+=1
-            else:
-                Hugo.lien+=1
-        if 'reactions' in p:
-            if p['reactions'][0]['actor']=='Manon Dsc':
-                Manon.messages.append(ftfy.fix_text(p['reactions'][0]['reaction']))
-            else:
-                Hugo.messages.append(ftfy.fix_text(p['reactions'][0]['reaction']))
+for f in ["message_1.json","message_2.json","message_3.json"]:
+    with open(f) as file:
+        data = json.load(file)
+        for p in data['messages']:
+            if 'content' in p and p['type']=='Generic':
+                if p['sender_name']=="Manon Dsc":
+                    Manon.messages.append(ftfy.fix_text(p['content']))
+                    Manon.time.append(p['timestamp_ms'])
+                else:
+                    Hugo.messages.append(ftfy.fix_text(p['content']))
+                    Hugo.time.append(p['timestamp_ms'])
+            if 'photos' in p:
+                if p['sender_name']=='Manon Dsc':
+                    Manon.pic+=1
+                else:
+                    Hugo.pic+=1
+            if p['type']=='Share':
+                if p['sender_name']=='Manon Dsc':
+                    Manon.lien+=1
+                else:
+                    Hugo.lien+=1
+            if 'reactions' in p:
+                if p['reactions'][0]['actor']=='Manon Dsc':
+                    Manon.messages.append(ftfy.fix_text(p['reactions'][0]['reaction']))
+                else:
+                    Hugo.messages.append(ftfy.fix_text(p['reactions'][0]['reaction']))
 
 #lire le CSV de Discord de Hugo
 with open('messages_disc_hugo.csv',newline='',encoding='utf-8') as file:
@@ -168,6 +183,12 @@ with open('messages_disc_hugo.csv',newline='',encoding='utf-8') as file:
         Hugo.messages.append(ftfy.fix_text(row[2]))
         Hugo.time.append(getDate(row[1])*1000)
 
+#lire le CSV de Discord de Manon
+with open('messages_disc_manon.csv',newline='',encoding='utf-8') as file:
+    reader=csv.reader(file)
+    for row in reader:
+        Manon.messages.append(ftfy.fix_text(row[2]))
+        Manon.time.append(getDate(row[1])*1000)
 
 for p in personnes:
     for i in range(7):
@@ -181,63 +202,32 @@ for p in personnes:
     temps(p.time,p.heures,p.jours,p.dateDico)
     dico_to_array(p.dateDico,p.dateListe,p.dateOcc)
 
-workbook=Workbook()
-sheet=workbook.active
+    p.sheet["A1"]=p.name
+    p.sheet["A2"]="Mots"
+    for i in range(len(p.arrayMots)):
+        p.sheet.cell(row=i+3,column=1).value=p.arrayMots[i]
+        p.sheet.cell(row=i+3,column=2).value=p.arrayOcc[i]
 
-sheet["A1"]="Mots"
-sheet["A2"]="Hugo"
-for i in range(len(Hugo.arrayMots)):
-    sheet.cell(row=i+3,column=1).value=Hugo.arrayMots[i]
-    sheet.cell(row=i+3,column=2).value=Hugo.arrayOcc[i]
+    p.sheet["D2"]="Heures des messages"
+    for i in range(24):
+        p.sheet.cell(row=i+3,column=4).value=str(i)+"h-"+str(i+1)+"h"
+        p.sheet.cell(row=i+3,column=5).value=p.heures[i]
 
-sheet["D2"]="Manon"
-for i in range(len(Manon.arrayMots)):
-    sheet.cell(row=i+3,column=4).value=Manon.arrayMots[i]
-    sheet.cell(row=i+3,column=5).value=Manon.arrayOcc[i]
+    p.sheet["G2"]="Jours des messages"
+    for i in range(7):
+        p.sheet.cell(row=i+3,column=7).value=days[i]
+        p.sheet.cell(row=i+3,column=8).value=p.jours[i]
 
-sheet["G1"]="Heures des messages"
-for i in range(24):
-    sheet.cell(row=i+3,column=7).value=str(i)+"h-"+str(i+1)+"h"
-sheet["H2"]="Hugo"
-for i in range(24):
-    sheet.cell(row=i+3,column=8).value=Hugo.heures[i]
-sheet["I2"]="Manon"
-for i in range(24):
-    sheet.cell(row=i+3,column=9).value=Manon.heures[i]
+    p.sheet["J2"]="Semaines des messages"
+    for i in range(1,len(p.dateListe)):
+        p.sheet.cell(row=i+3,column=10).value=p.dateListe[len(p.dateListe)-i]
+        p.sheet.cell(row=i+3,column=11).value=p.dateOcc[len(p.dateListe)-i]
 
+    p.sheet["M2"]="Nombre de photos"
+    p.sheet["M3"]=p.pic
 
-sheet["K1"]="Jours des messages"
-for i in range(7):
-    sheet.cell(row=i+3,column=11).value=days[i]
-sheet["L2"]="Hugo"
-for i in range(7):
-    sheet.cell(row=i+3,column=12).value=Hugo.jours[i]
-sheet["M2"]="Manon"
-for i in range(7):
-    sheet.cell(row=i+3,column=13).value=Manon.jours[i]
+    p.sheet["O2"]="Nombre de liens"
+    p.sheet["O3"]=p.lien
 
-sheet["O1"]="Semaines des messages"
-sheet["O2"]="Hugo"
-lH=len(Hugo.dateListe)
-lM=len(Manon.dateListe)
-for i in range(1,lH):
-    sheet.cell(row=i+3,column=15).value=Hugo.dateListe[lH-i]
-    sheet.cell(row=i+3,column=16).value=Hugo.dateOcc[lH-i]
-sheet["Q2"]="Manon"
-for i in range(1,lM):
-    sheet.cell(row=i+3,column=17).value=Manon.dateListe[lM-i]
-    sheet.cell(row=i+3,column=18).value=Manon.dateOcc[lM-i]
-
-sheet["T1"]="Nombre de photos"
-sheet["T2"]="Hugo"
-sheet["T3"]=Hugo.pic
-sheet["U2"]='Manon'
-sheet["U3"]=Manon.pic
-
-sheet["W1"]="Nombre de liens"
-sheet["W2"]="Hugo"
-sheet["w3"]=Hugo.lien
-sheet["X2"]="Manon"
-sheet["X3"]=Manon.lien
-
+del workbook["Sheet"]
 workbook.save(filename="Manon.xlsx")
